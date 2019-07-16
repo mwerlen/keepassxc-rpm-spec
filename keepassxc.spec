@@ -1,27 +1,34 @@
-Name: keepassxc
-Version: 2.3.4
-Release: 0%{?dist}
-Summary: Cross-platform password manager
-Group: User Interface/Desktops
-License: Boost and BSD and CC0 and GPLv3 and LGPLv2 and LGPLv2+ and LGPLv3+ and Public Domain
-URL: https://keepassxc.org/
-Source0: https://github.com/keepassxreboot/keepassxc/releases/download/%{version}/keepassxc-%{version}-src.tar.xz
+# EPEL7 not possible because libgcrypt version is 1.5
+
+Name:           keepassxc
+Version:        2.4.3
+Release:        1%{?dist}
+Summary:        Cross-platform password manager
+License:        Boost and BSD and CC0 and GPLv3 and LGPLv2 and LGPLv2+ and LGPLv3+ and Public Domain
+URL:            http://www.keepassxc.org/
+Source0:     	https://github.com/keepassxreboot/keepassxc/releases/download/%{version}/keepassxc-%{version}-src.tar.xz
+
+%if 0%{?el7}
+BuildRequires: cmake3 >= 3.1
+%else
+BuildRequires: cmake >= 3.1
+%endif
 BuildRequires:  desktop-file-utils
+BuildRequires:  gcc-c++ >= 4.7
 BuildRequires:  qt5-qtbase-devel >= 5.2
 BuildRequires:  qt5-qttools-devel >= 5.2
-BuildRequires:  libXi-devel
-BuildRequires:  libXtst-devel
-BuildRequires:  qt5-qtx11extras-devel
-BuildRequires:  zlib-devel
-BuildRequires:  libyubikey-devel
-BuildRequires:  ykpers-devel
-BuildRequires:  libgcrypt-devel >= 1.7
 BuildRequires:  libargon2-devel
 BuildRequires:  libcurl-devel
+BuildRequires:  libgcrypt-devel >= 1.7
+BuildRequires:  libmicrohttpd-devel
 BuildRequires:  libsodium-devel
-BuildRequires:  gcc-c++
-BuildRequires:  cmake >= 3.1
-
+BuildRequires:  libXi-devel
+BuildRequires:  libXtst-devel
+BuildRequires:  libyubikey-devel
+BuildRequires:  qt5-qtx11extras-devel
+BuildRequires:  ykpers-devel
+BuildRequires:  zlib-devel
+BuildRequires:  libappstream-glib
 
 %description
 KeePassXC is a community fork of KeePassX
@@ -40,31 +47,38 @@ The complete database is always encrypted either with AES (alias Rijndael) or
 Twofish encryption algorithm using a 256 bit key. Therefore the saved
 information can be considered as quite safe.
 
-%global debug_package %{nil} 
+
+
 %prep
-%setup -qn %{name}-%{version}
+%autosetup
+
+# get rid of icon tag in appdata file
+# icon tag is not allowed in desktop appdata file
+sed -i '/\<icon/d' share/linux/org.%{name}.KeePassXC.appdata.xml
+
+# fix missing include for Qt 5.11
+sed -i '35i#include <QButtonGroup>' src/gui/entry/EditEntryWidget.cpp
 
 %build
 mkdir build
 cd build
-cmake .. \
-	-DCMAKE_INSTALL_PREFIX=/usr \
-	-DCMAKE_VERBOSE_MAKEFILE=OFF \
-	-DWITH_TESTS=OFF \
-	-DWITH_XC_ALL=ON \
-	-DCMAKE_BUILD_TYPE=Release
+
+%cmake .. \
+    -DWITH_TESTS=OFF \
+    -DWITH_XC_ALL=ON \
+    -DCMAKE_BUILD_TYPE=Release
  
-make %{?_smp_mflags}
+%make_build
  
 %install
 cd build
-make install DESTDIR=%{buildroot}
+%make_install
  
 desktop-file-install \
-	--dir %{buildroot}%{_datadir}/applications \
-	--delete-original \
-	--add-mime-type application/x-keepassxc \
-	%{buildroot}%{_datadir}/applications/org.keepassxc.KeePassXC.desktop
+    --dir %{buildroot}%{_datadir}/applications \
+    --delete-original \
+    --add-mime-type application/x-keepassxc \
+    %{buildroot}%{_datadir}/applications/org.%{name}.KeePassXC.desktop
  
 # Associate KDB* files
 cat > x-keepassxc.desktop << EOF
@@ -77,123 +91,112 @@ Patterns=*.kdb;*.KDB;*.kdbx;*.KDBX*
 Type=MimeType
 EOF
 install -D -m 644 -p x-keepassxc.desktop \
-	%{buildroot}%{_datadir}/mimelnk/application/x-keepassxc.desktop
+    %{buildroot}%{_datadir}/mimelnk/application/x-keepassxc.desktop
+
+#install appdata files
 
 %find_lang keepassx --with-qt
 
 %check
 ctest -V %{?_smp_mflags}
-
-%post
-touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
-update-desktop-database &> /dev/null ||:
- 
-%postun
-if [ $1 -eq 0 ] ; then
-    touch --no-create %{_datadir}/icons/hicolor &>/dev/null
-    gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
-fi
-update-desktop-database &> /dev/null ||:
-
-%posttrans
-gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
-desktop-file-validate %{_datadir}/applications/org.keepassxc.KeePassXC.desktop &> /dev/null || :
+desktop-file-validate %{buildroot}%{_datadir}/applications/org.%{name}.KeePassXC.desktop
+appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/org.%{name}.KeePassXC.appdata.xml
 
 %files
-%doc CHANGELOG
+%doc README.md
 %license COPYING LICENSE*
 %{_bindir}/keepassxc
 %{_bindir}/keepassxc-cli
 %{_bindir}/keepassxc-proxy
 %{_datadir}/keepassxc
-%{_datadir}/applications/*.desktop
-%{_datadir}/mimelnk/application/*.desktop
+%{_datadir}/applications/org.%{name}.KeePassXC.desktop
+%{_datadir}/metainfo/org.%{name}.KeePassXC.appdata.xml
+%{_datadir}/mimelnk
 %{_datadir}/mime/packages/*.xml
-%{_datadir}/metainfo/*.xml
-%{_datadir}/icons/hicolor/*
-%{_mandir}/man1/keepassxc-cli.1.*
-%{_libdir}/keepassxc/*.so
- 
+%{_datadir}/icons/hicolor/*/*/*keepassxc*
+%{_libdir}/%{name}
+%{_mandir}/man1/%{name}-cli.1*
+
 %changelog
-* Wed Sep 05 2018 Bugzy Little <bugzylittle@gmail.com> - 2.3.4-0
-- Update to v2.3.4
-- Show all URL schemes in entry view [#1768]
-- Disable merge when database is locked [#1975]
-- Fix intermittent crashes with favorite icon downloads [#1980]
-- Provide potential crash warning to Qt 5.5.x users [#2211]
-- Disable apply button when creating new entry/group to prevent data loss [#2204]
-- Multiple SSH Agent fixes [#1981, #2117]
-- Multiple Browser Integration enhancements [#1993, #2003, #2055, #2116, #2159, #2174, #2185]
-- Fix browser proxy application not closing properly [#2142]
-- Add real names and Patreon supporters to about dialog [#2214]
-- Add settings button to toolbar, Donate button, and Report a Bug button to help menu [#2214]
+* Thu Aug 16 2019 Maxime Werlen <maxime@werlen.fr> - 2.4.3-1
+- Update to 2.4.3
 
-* Tue May 08 2018 Bugzy Little <bugzylittle@gmail.com> - 2.3.3-0
-- Update to v2.3.3
-- Fix crash when browser integration is enabled [#1923]
-- Enable high entropy ASLR on Windows [#1747]
-- Enhance favicon fetching [#1786]
-- Fix crash on Windows due to Auto-Type [#1691]
-- Fix dark tray icon changing all icons [#1680]
-- Fix --pw-stdin not using getPassword function [#1686]
-- Fix placeholders being resolved in notes [#1907]
-- Enable auto-type start delay to be configurable [#1908]
-- Browser: Fix native messaging reply size [#1719]
-- Browser: Increase maximum buffer size [#1720]
-- Browser: Enhance usability and functionality [#1810, #1822, #1830, #1884, #1906]
-- SSH Agent: Parse aes-256-cbc/ctr keys [#1682]
-- SSH Agent: Enhance usability and functionality [#1677, #1679, #1681, #1787]
+* Fri Feb 01 2019 Fedora Release Engineering <releng@fedoraproject.org> - 2.3.4-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
 
-* Tue Mar 06 2018 Bugzy Little <bugzylittle@gmail.com> - 2.3.1-0
-- Update to v2.3.1
+* Wed Aug 29 2018 Mukundan Ragavan <nonamedotc@fedoraproject.org> - 2.3.4-1
+- Update to 2.3.4
 
-* Fri Dec 15 2017 Bugzy Little <bugzylittle@gmail.com> - 2.2.4-0
-- Update to v2.2.4
+* Thu Jul 19 2018 Mukundan Ragavan <nonamedotc@fedoraproject.org> - 2.3.3-3
+- Fix FTBFS
 
-* Sun Oct 22 2017 Bugzy Little <bugzylittle@gmail.com> - 2.2.2-0
-- Update to v2.2.2
+* Fri Jul 13 2018 Fedora Release Engineering <releng@fedoraproject.org> - 2.3.3-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_29_Mass_Rebuild
 
-* Sun Oct 01 2017 Bugzy Little <bugzylittle@gmail.com> - 2.2.1-0
-- Update to v2.2.1
+* Thu May 10 2018 Mukundan Ragavan <nonamedotc@fedoraproject.org> - 2.3.3-1
+- Update to 2.3.3
 
-* Sun Jun 25 2017 Bugzy Little <bugzylittle@gmail.com> - 2.2.0-0
-- Update to v2.2.0
+* Tue May 08 2018 Mukundan Ragavan <nonamedotc@fedoraproject.org> - 2.3.2-1
+- Update to 2.3.2
 
-* Sun Apr 9 2017 Bugzy Little <bugzylittle@gmail.com> - 2.1.4-0
-- Change discription to match official package
-- Modifying release tag so that there is no conflict with official package
+* Wed Mar 07 2018 Germano Massullo <germano.massullo@gmail.com> - 2.3.1-1
+- 2.3.1 release
+- used -DWITH_XC_ALL=ON to enable all features. Read https://github.com/keepassxreboot/keepassxc/issues/1558#issuecomment-369291706
 
-* Sun Apr 9 2017 Bugzy Little <bugzylittle@gmail.com> - 2.1.4-1
-- Update to v2.1.4
+* Wed Feb 28 2018 Germano Massullo <germano.massullo@gmail.com> - 2.2.4-7
+- added BuildRequires: libargon2-devel
+- added BuildRequires: libcurl-devel
+- added BuildRequires: libgcrypt-devel >= 1.7
+- added BuildRequires: libsodium-devel
+- added BuildRequires: gcc-c++ >= 4.7
+- added %%{_mandir}/man1/%{name}-cli.1*
 
-* Fri Feb 24 2017 Bugzy Little <bugzylittle@gmail.com> - 2.1.3-1
-- Update to v2.1.3
+* Fri Feb 09 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 2.2.4-6
+- Escape macros in %%changelog
 
-* Fri Feb 24 2017 Bugzy Little <bugzylittle@gmail.com> - 2.1.2-5
-- Fix if conditions
-- trigger update
+* Wed Feb 07 2018 Fedora Release Engineering <releng@fedoraproject.org> - 2.2.4-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_28_Mass_Rebuild
 
-* Mon Feb 20 2017 Toni Spets <toni.spets@iki.fi> - 2.1.2-4
-- Use official tar.xz as the source
-- Depend on libgcrypt16 package on C7
+* Fri Jan 05 2018 Igor Gnatenko <ignatenkobrain@fedoraproject.org> - 2.2.4-4
+- Remove obsolete scriptlets
 
-* Fri Feb 17 2017 Bugzy Little <bugzylittle@gmail.com> - 2.1.2
-- Fix conflict with keepassx by renaming mime
+* Wed Dec 27 2017 Mukundan Ragavan <nonamedotc@fedoraproject.org> - 2.2.4-3
+- Fix specfile error
 
-* Fri Feb 17 2017 Bugzy Little <bugzylittle@gmail.com> - 2.1.2
-- Update to v2.1.2
+* Sat Dec 16 2017 Mukundan Ragavan <nonamedotc@fedoraproject.org> - 2.2.4-2
+- Adjust for changes in appdata and desktop filename change
 
-* Mon Feb 13 2017 Bugzy Little <bugzylittle@gmail.com> - 2.1.1
-- Update to v2.1.1
-- Remove tests
-- compile with autotype
+* Thu Dec 14 2017 Germano Massullo <germano.massullo@gmail.com> - 2.2.4-1
+- 2.2.4 release
+- removed patch to fix typo in a XML tag
 
-* Mon Feb 13 2017 Bugzy Little <bugzylittle@gmail.com> - 2.1.0
-- Update to v2.1.1
+* Tue Dec 12 2017 Germano Massullo <germano.massullo@gmail.com> - 2.2.3-1
+- 2.2.3 release
+- added patch to fix typo in a XML tag
 
-* Wed Feb 1 2017 Bugzy Little <bugzylittle@gmail.com> - 2.1.0
-- Update to v2.1.0
+* Sun Oct 22 2017 Mukundan Ragavan <nonamedotc@fedoraproject.org> - 2.2.2-1
+- Update to 2.2.2
+- Fix desktop file names
+- Added BR on libappstream-glib
+- Install appdata file
 
-* Mon Dec 19 2016 Bugzy Little <bugzylittle@gmail.com> - 2.0.3
-- Initial build for keepassxc v2.0.3
-- initial package
+* Mon Oct 02 2017 Germano Massullo <germano.massullo@gmail.com> - 2.2.1-1
+- 2.2.1 release
+
+* Thu Aug 03 2017 Fedora Release Engineering <releng@fedoraproject.org> - 2.2.0-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Binutils_Mass_Rebuild
+
+* Wed Jul 26 2017 Fedora Release Engineering <releng@fedoraproject.org> - 2.2.0-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
+
+* Mon Jun 26 2017 Germano Massullo <germano.massullo@gmail.com> - 2.2.0-1
+- 2.2.0 release
+- added %%{_bindir}/keepassxc-cli
+- changed -DWITH_XC_YUBIKEY=OFF to -DWITH_XC_YUBIKEY=ON
+- added BuildRequires: ykpers-devel and BuildRequires: libyubikey-devel
+
+* Fri May 19 2017 Germano Massullo <germano.massullo@gmail.com> - 2.1.4-2
+- Disabled Yubikey support. It will be re-enabled on 2.2.0 release
+
+* Sun May 14 2017 Germano Massullo <germano.massullo@gmail.com> - 2.1.4-1
+- First release on Fedora repository
