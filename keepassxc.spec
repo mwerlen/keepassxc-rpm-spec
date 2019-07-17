@@ -2,7 +2,7 @@
 
 Name:           keepassxc
 Version:        2.4.3
-Release:        1%{?dist}
+Release:        3%{?dist}
 Summary:        Cross-platform password manager
 License:        Boost and BSD and CC0 and GPLv3 and LGPLv2 and LGPLv2+ and LGPLv3+ and Public Domain
 URL:            http://www.keepassxc.org/
@@ -17,7 +17,8 @@ BuildRequires:  desktop-file-utils
 BuildRequires:  gcc-c++ >= 4.7
 BuildRequires:  qt5-qtbase-devel >= 5.2
 BuildRequires:  qt5-qttools-devel >= 5.2
-BuildRequires:  qt5-qtsvg-devel >= 5.2
+BuildRequires:  qt5-qtsvg-devel
+BuildRequires:  qrencode-devel
 BuildRequires:  libargon2-devel
 BuildRequires:  libcurl-devel
 BuildRequires:  libgcrypt-devel >= 1.7
@@ -53,13 +54,6 @@ information can be considered as quite safe.
 %prep
 %autosetup
 
-# get rid of icon tag in appdata file
-# icon tag is not allowed in desktop appdata file
-sed -i '/\<icon/d' share/linux/org.%{name}.KeePassXC.appdata.xml
-
-# fix missing include for Qt 5.11
-sed -i '35i#include <QButtonGroup>' src/gui/entry/EditEntryWidget.cpp
-
 %build
 mkdir build
 cd build
@@ -67,6 +61,7 @@ cd build
 %cmake .. \
     -DWITH_TESTS=OFF \
     -DWITH_XC_ALL=ON \
+    -WITH_XC_UPDATECHECK=ON \
     -DCMAKE_BUILD_TYPE=Release
  
 %make_build
@@ -119,9 +114,29 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/org.%{nam
 %{_mandir}/man1/%{name}-cli.1*
 
 %changelog
-* Wed Jul 17 2019 Maxime Werlen <maxime@werlen.fr> - 2.4.3-1
+* Wed Jul 17 2019 Maxime Werlen <maxime@werlen.fr> - 2.4.3-3
+- Enable update check
+
+* Tue Jun 25 2019 Bjรถrn Esser <besser82@fedoraproject.org> - 2.4.3-2
+- Rebuilt (libqrencode.so.4)
+
+* Tue Jun 11 2019 Mukundan Ragavan <nonamedotc@fedoraproject.org> - 2.4.3-1
 - Update to 2.4.3
-- Adds qt5-qtsvg-devel dependency
+
+* Fri May 31 2019 Mukundan Ragavan <nonamedotc@fedoraproject.org> - 2.4.2-1
+- Update to 2.4.2
+
+* Tue Apr 16 2019 Germano Massullo <germano.massullo@gmail.com> - 2.4.1-1
+- 2.4.1 release
+- Added WITH_XC_UPDATECHECK=OFF
+
+* Wed Mar 20 2019 Mukundan Ragavan <nonamedotc@fedoraproject.org> - 2.4.0-1
+- Update to 2.4.0
+- Drop unneeded sed lines in spec file
+- Added BR for qrencode-devel and qt5-qtsvg-devel
+
+* Mon Mar 18 2019 Remi Collet <remi@fedoraproject.org> - 2.3.4-3
+- rebuild for libargon2 new soname
 
 * Fri Feb 01 2019 Fedora Release Engineering <releng@fedoraproject.org> - 2.3.4-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
@@ -202,3 +217,4 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/org.%{nam
 
 * Sun May 14 2017 Germano Massullo <germano.massullo@gmail.com> - 2.1.4-1
 - First release on Fedora repository
+
