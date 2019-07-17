@@ -17,6 +17,7 @@ BuildRequires:  desktop-file-utils
 BuildRequires:  gcc-c++ >= 4.7
 BuildRequires:  qt5-qtbase-devel >= 5.2
 BuildRequires:  qt5-qttools-devel >= 5.2
+BuildRequires:  qt5-qtsvg-devel >= 5.2
 BuildRequires:  libargon2-devel
 BuildRequires:  libcurl-devel
 BuildRequires:  libgcrypt-devel >= 1.7
@@ -118,8 +119,9 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/org.%{nam
 %{_mandir}/man1/%{name}-cli.1*
 
 %changelog
-* Thu Aug 16 2019 Maxime Werlen <maxime@werlen.fr> - 2.4.3-1
+* Wed Jul 17 2019 Maxime Werlen <maxime@werlen.fr> - 2.4.3-1
 - Update to 2.4.3
+- Adds qt5-qtsvg-devel dependency
 
 * Fri Feb 01 2019 Fedora Release Engineering <releng@fedoraproject.org> - 2.3.4-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_30_Mass_Rebuild
