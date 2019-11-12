@@ -1,8 +1,8 @@
 # EPEL7 not possible because libgcrypt version is 1.5
 
 Name:           keepassxc
-Version:        2.4.3
-Release:        3%{?dist}
+Version:        2.5.1
+Release:        1%{?dist}
 Summary:        Cross-platform password manager
 License:        Boost and BSD and CC0 and GPLv3 and LGPLv2 and LGPLv2+ and LGPLv3+ and Public Domain
 URL:            http://www.keepassxc.org/
@@ -28,6 +28,12 @@ BuildRequires:  libXi-devel
 BuildRequires:  libXtst-devel
 BuildRequires:  libyubikey-devel
 BuildRequires:  qt5-qtx11extras-devel
+# For quazip read https://bugzilla.redhat.com/show_bug.cgi?id=1754061#c1
+%if 0%{?el8}
+BuildRequires:  quazip-devel
+%else
+BuildRequires:  quazip-qt5-devel
+%endif
 BuildRequires:  ykpers-devel
 BuildRequires:  zlib-devel
 BuildRequires:  libappstream-glib
@@ -61,6 +67,7 @@ cd build
 %cmake .. \
     -DWITH_TESTS=OFF \
     -DWITH_XC_ALL=ON \
+    -DWITH_XC_KEESHARE_SECURE=ON \
     -WITH_XC_UPDATECHECK=ON \
     -DCMAKE_BUILD_TYPE=Release
  
@@ -112,8 +119,14 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/org.%{nam
 %{_datadir}/icons/hicolor/*/*/*keepassxc*
 %{_libdir}/%{name}
 %{_mandir}/man1/%{name}-cli.1*
+%{_mandir}/man1/%{name}.1*
 
 %changelog
+* Tue Nov 12 2019 Maxime Werlen <maxime@werlen.fr> - 2.5.1-1
+- Update to 2.5.1
+- Added -DWITH_XC_KEESHARE_SECURE=ON from fedora - Germano Massullo <germano.massullo@gmail.com> - 2.4.3-4
+- Added BuildRequires: quazip-devel from fedora - Germano Massullo <germano.massullo@gmail.com> - 2.4.3-6
+
 * Wed Jul 17 2019 Maxime Werlen <maxime@werlen.fr> - 2.4.3-3
 - Enable update check
 
