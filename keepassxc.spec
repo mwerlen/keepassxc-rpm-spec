@@ -1,7 +1,7 @@
 # EPEL7 not possible because libgcrypt version is 1.5
 
 Name:           keepassxc
-Version:        2.5.1
+Version:        2.5.2
 Release:        1%{?dist}
 Summary:        Cross-platform password manager
 License:        Boost and BSD and CC0 and GPLv3 and LGPLv2 and LGPLv2+ and LGPLv3+ and Public Domain
@@ -122,6 +122,9 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/org.%{nam
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Mon Jan 13 2020 Maxime Werlen <maxime@werlen.fr> - 2.5.2-1
+- Update to 2.5.2
+
 * Tue Nov 12 2019 Maxime Werlen <maxime@werlen.fr> - 2.5.1-1
 - Update to 2.5.1
 - Added -DWITH_XC_KEESHARE_SECURE=ON from fedora - Germano Massullo <germano.massullo@gmail.com> - 2.4.3-4
