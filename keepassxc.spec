@@ -1,7 +1,7 @@
 # EPEL7 not possible because libgcrypt version is 1.5
 
 Name:           keepassxc
-Version:        2.5.4
+Version:        2.6.0
 Release:        1%{?dist}
 Summary:        Cross-platform password manager
 License:        Boost and BSD and CC0 and GPLv3 and LGPLv2 and LGPLv2+ and LGPLv3+ and Public Domain
@@ -37,6 +37,9 @@ BuildRequires:  quazip-qt5-devel
 BuildRequires:  ykpers-devel
 BuildRequires:  zlib-devel
 BuildRequires:  libappstream-glib
+BuildRequires:  qt5-qtbase-private-devel
+BuildRequires:  readline-devel
+BuildRequires:  rubygem-asciidoctor
 
 %description
 KeePassXC is a community fork of KeePassX
@@ -122,6 +125,9 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/org.%{nam
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Wed Jul 15 2020 Maxime Werlen <maxime@werlen.fr> - 2.6.0-1
+- Update to 2.6.0
+
 * Tue Apr 14 2020 Maxime Werlen <maxime@werlen.fr> - 2.5.4-1
 - Update to 2.5.4
 
