@@ -1,18 +1,15 @@
+%undefine __cmake_in_source_build
 # EPEL7 not possible because libgcrypt version is 1.5
 
 Name:           keepassxc
-Version:        2.6.0
+Version:        2.6.1
 Release:        1%{?dist}
 Summary:        Cross-platform password manager
 License:        Boost and BSD and CC0 and GPLv3 and LGPLv2 and LGPLv2+ and LGPLv3+ and Public Domain
 URL:            http://www.keepassxc.org/
 Source0:     	https://github.com/keepassxreboot/keepassxc/releases/download/%{version}/keepassxc-%{version}-src.tar.xz
 
-%if 0%{?el7}
-BuildRequires: cmake3 >= 3.1
-%else
-BuildRequires: cmake >= 3.1
-%endif
+BuildRequires:  cmake >= 3.1
 BuildRequires:  desktop-file-utils
 BuildRequires:  gcc-c++ >= 4.7
 BuildRequires:  qt5-qtbase-devel >= 5.2
@@ -64,21 +61,22 @@ information can be considered as quite safe.
 %autosetup
 
 %build
-mkdir build
-cd build
+# This package fails to build with LTO due to undefined symbols.  LTO
+# was disabled in OpenSuSE as well, but with no real explanation why
+# beyond the undefined symbols.  It really shold be investigated further.
+# Disable LTO
+%define _lto_cflags %{nil}
 
-%cmake .. \
+%cmake \
     -DWITH_TESTS=OFF \
     -DWITH_XC_ALL=ON \
     -DWITH_XC_KEESHARE_SECURE=ON \
     -WITH_XC_UPDATECHECK=ON \
     -DCMAKE_BUILD_TYPE=Release
- 
-%make_build
+%cmake_build
  
 %install
-cd build
-%make_install
+%cmake_install
  
 desktop-file-install \
     --dir %{buildroot}%{_datadir}/applications \
@@ -104,7 +102,7 @@ install -D -m 644 -p x-keepassxc.desktop \
 %find_lang keepassx --with-qt
 
 %check
-ctest -V %{?_smp_mflags}
+%ctest
 desktop-file-validate %{buildroot}%{_datadir}/applications/org.%{name}.KeePassXC.desktop
 appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/org.%{name}.KeePassXC.appdata.xml
 
@@ -125,6 +123,10 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/org.%{nam
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Thu Sep 01 2020 Maxime Werlen <maxime@werlen.fr> - 2.6.1-1
+- Update to 2.6.1
+- Apply commit bebd78 from Fedora repo by ignatenkobrain
+
 * Wed Jul 15 2020 Maxime Werlen <maxime@werlen.fr> - 2.6.0-1
 - Update to 2.6.0
 
